@@ -86,9 +86,9 @@ def process_file(file_path, model):
         gc.collect()
         torch.cuda.empty_cache()
 
-        with torch.no_grad():
+        with torch.no_grad(), torch.autocast('cuda'):
             # Passing all paths to model.transcribe is more stable than a loop
-            transcriptions = model.transcribe(temp_files, batch_size=1)
+            transcriptions = model.transcribe(temp_files, batch_size=8)
 
         full_text = []
         srt_segments = []
