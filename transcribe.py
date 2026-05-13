@@ -15,9 +15,9 @@ import time
 import wave
 import gc
 
-# Disable CuDNN completely to avoid the "illegal memory access" bug in TDT kernels
-torch.backends.cudnn.enabled = False
-torch.backends.cuda.matmul.allow_tf32 = False
+# Enable CuDNN and TF32 for optimal GPU performance
+torch.backends.cudnn.enabled = True
+torch.backends.cuda.matmul.allow_tf32 = True
 
 def extract_audio_to_memory(video_path):
     """Extracts 16kHz mono audio directly into RAM."""
@@ -88,7 +88,7 @@ def process_file(file_path, model):
 
         with torch.no_grad(), torch.autocast('cuda'):
             # Passing all paths to model.transcribe is more stable than a loop
-            transcriptions = model.transcribe(temp_files, batch_size=8)
+            transcriptions = model.transcribe(temp_files, batch_size=24)
 
         full_text = []
         srt_segments = []
@@ -201,7 +201,7 @@ def main():
     parser.add_argument("--model", default="nvidia/parakeet-tdt-0.6b-v3")
     args = parser.parse_args()
 
-    print(f"[*] Initializing {args.model} (CuDNN Disabled for stability)...")
+    print(f"[*] Initializing {args.model} (CuDNN Enabled for performance)...")
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = nemo_asr.models.ASRModel.from_pretrained(model_name=args.model)
     model = model.to(device)
