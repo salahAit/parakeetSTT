@@ -145,15 +145,27 @@ def process_file(file_path, model):
         with open(json_time_path, 'w', encoding='utf-8') as f:
             json.dump(flat_words, f, indent=2, ensure_ascii=False)
 
-        # Create smaller segments for SRT and JSON (max 10 words per subtitle line)
+        # Create smaller segments for SRT and JSON (split by punctuation or max 12 words)
+        import re
         small_segments = []
-        words_per_line = 10
-        for i in range(0, len(flat_words), words_per_line):
-            chunk_words = flat_words[i:i+words_per_line]
-            if not chunk_words: continue
-            seg_start = chunk_words[0]['start']
-            seg_end = chunk_words[-1]['end']
-            seg_text = " ".join([w['word'] for w in chunk_words])
+        current_chunk = []
+        
+        for w_dict in flat_words:
+            current_chunk.append(w_dict)
+            word_text = w_dict['word']
+            
+            # End segment if it has punctuation or reaches 12 words
+            if re.search(r'[.?!،؛]', word_text) or len(current_chunk) >= 12:
+                seg_start = current_chunk[0]['start']
+                seg_end = current_chunk[-1]['end']
+                seg_text = " ".join([w['word'] for w in current_chunk])
+                small_segments.append((seg_start, seg_end, seg_text))
+                current_chunk = []
+
+        if current_chunk:
+            seg_start = current_chunk[0]['start']
+            seg_end = current_chunk[-1]['end']
+            seg_text = " ".join([w['word'] for w in current_chunk])
             small_segments.append((seg_start, seg_end, seg_text))
 
         # Save SRT
